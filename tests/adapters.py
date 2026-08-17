@@ -457,6 +457,12 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
         Float[Tensor, "..."]: Tensor of with the same shape as `in_features` with the output of
         softmax normalizing the specified `dim`.
     """
+
+    m = in_features.max(dim=dim, keepdim=True).values
+    e = torch.exp(in_features - m)
+    s = e.sum(dim=dim, keepdim=True)
+    return e / s
+
     raise NotImplementedError
 
 
