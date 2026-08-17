@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from typing import IO, Any, BinaryIO
 
 import numpy.typing as npt
-import torch
+import torch, math
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
@@ -120,6 +120,15 @@ def run_scaled_dot_product_attention(
     Returns:
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
+
+    d_k = Q.shape[-1]
+    temp = Q @ K.transpose(-1, -2) / math.sqrt(d_k)
+
+    if mask is not None:
+        temp = temp - ~mask * 1e30
+
+    return run_softmax(temp, dim=-1) @ V
+
     raise NotImplementedError
 
 
