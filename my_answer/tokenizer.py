@@ -1,6 +1,9 @@
 from typing import Iterable, Iterator
 import regex as re
-
+import json, os
+from tqdm import tqdm
+from my_answer.bpe import train_bpe
+import numpy as np
 class Tokenizer:
 
     def __init__(self, vocab : dict[int, bytes], merges : list[tuple[bytes, bytes]], special_tokens : list[str] = None):
@@ -27,17 +30,15 @@ class Tokenizer:
 
     @classmethod
     def from_files(cls, vocab_filepath, merges_filepath, special_tokens=None):
-        # TODO: resolve filepath
-        f_vocab = open(vocab_filepath, "r")
-        cls.vocab = f_vocab.read()
-        f_vocab.close()
+        with open(vocab_filepath, "r") as f:
+            raw_vocab = json.load(f)
+        with open(merges_filepath, "r") as f:
+            raw_merges = json.load(f)
 
-        f_merges = open(merges_filepath, "r")
-        cls.merges = f_merges.read()
-        f_merges.close()
+        vocab = {int(k): v.encode("latin-1") for k, v in raw_vocab.items()}
+        merges = [(a.encode("latin-1"), b.encode("latin-1")) for a, b in raw_merges]
 
-        cls.special_tokens = special_tokens or []
-        return
+        return cls(vocab, merges, special_tokens)
 
     def encode(self, text: str) -> list[int]:
         output = []
@@ -102,11 +103,49 @@ class Tokenizer:
         output = b"".join(self.vocab[id] for id in ids)
         return output.decode("utf-8", errors="replace")
 
-if __name__ == "__main__":
-    vocab = {0: b' ', 1: b'a', 2: b'c', 3: b'e', 4: b'h', 5: b't',
-            6: b'th', 7: b' c', 8: b' a', 9: b'the', 10: b' at'}
-    merges = [(b't', b'h'), (b' ', b'c'), (b' ', b'a'), (b'th', b'e'), (b' a', b't')]
+    def save_tokenizer(self, vocab_filepath, merges_filepath):
+        json_vocab = {str(k): v.decode("latin-1") for k, v in self.vocab.items()}
+        json_merges = [[a.decode("latin-1"), b.decode("latin-1")] for a, b in self.merges]
 
-    t = Tokenizer(vocab, merges, ["<|endoftext|>"])
-    print(t.encode("the<|endoftext|>cat<|endoftext|>ate"))
-    print(t.decode([9, 7, 1, 5, 10, 3]))
+        with open(vocab_filepath, "w") as f:
+            json.dump(json_vocab, f, indent=2)
+        with open(merges_filepath, "w") as f:
+            json.dump(json_merges, f, indent=2)
+
+def train(use_cache = False):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(BASE_DIR, "..", "data", "TinyStoriesV2-GPT4-train.txt")    
+    vocab_size = 10000
+    special_tokens = ["<|endoftext|>"]
+    vocab_filepath = os.path.join(BASE_DIR, "..", "data", "TinyStoriesVocab.json")
+    merges_filepath = os.path.join(BASE_DIR, "..", "data", "TinyStoriesMerges.json")
+
+    if use_cache:
+        tokenizer = Tokenizer.from_files(vocab_filepath, merges_filepath, special_tokens)
+    else:
+        vocab, merges = train_bpe(path, vocab_size, special_tokens)
+        tokenizer = Tokenizer(vocab, merges, special_tokens)
+        tokenizer.save_tokenizer(vocab_filepath, merges_filepath)
+
+    with open(path, "r", encoding="utf-8") as f:
+        num_lines = sum(1 for _ in tqdm(f, desc="counting lines", unit="line"))
+
+    total_bytes = os.path.getsize(path)
+    total_tokens = 0
+
+    encode_iterator = None
+
+    with open(path, "r", encoding="utf-8") as f:
+        lines = tqdm(f, total=num_lines, desc="encoding", unit="line")
+        encode_iterator = tokenizer.encode_iterable(lines)
+        for _ in encode_iterator:
+            total_tokens += 1
+
+    print(f"{total_bytes / total_tokens:.3f} bytes/token")
+
+    arr = np.fromiter(encode_iterator, dtype=np.uint16)
+    arr_path = os.path.join(BASE_DIR, "..", "data", "TinyStoriesEncodeArray.bin")
+    np.save(arr_path, arr)    
+
+if __name__ == "__main__":
+    train(True)

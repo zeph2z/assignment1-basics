@@ -1,4 +1,9 @@
+import time
+from tqdm import tqdm
+
 def train_bpe(input_path, vocab_size, special_tokens):
+    start = time.time()
+
     f = open(input_path, "r")
     text = f.read()
     f.close()
@@ -17,13 +22,14 @@ def train_bpe(input_path, vocab_size, special_tokens):
     import regex as re
     chunks = re.split("|".join(map(re.escape, special_tokens)), text)
 
-    for chunk in chunks:
+    for chunk in tqdm(chunks, desc="pretokenize", unit="chunk"):
         for it in re.finditer(PAT, chunk):
             word = it.group()
             key = tuple(bytes([i]) for i in word.encode("utf-8"))
             counts[key] = counts.get(key, 0) + 1
 
     # training
+    pbar = tqdm(total=vocab_size - len(vocab), desc="merges", unit="merge")
     while len(vocab) < vocab_size:
         pair_counts = {}
 
@@ -57,6 +63,11 @@ def train_bpe(input_path, vocab_size, special_tokens):
             new_counts[tuple(new_key)] = counts[key]
 
         counts = new_counts
+        pbar.update(1)
+
+    pbar.close()
+    elasped = time.time() - start
+    print(f"Training costs {elasped:.2f} seconds.")
 
     return vocab, merges
 
