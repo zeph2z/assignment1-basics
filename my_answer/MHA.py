@@ -30,11 +30,14 @@ class MHA(nn.Module):
         multi_K = einops.rearrange(K, "... s (h d) -> ... h s d", h=self.num_head)
         multi_V = einops.rearrange(V, "... s (h d) -> ... h s d", h=self.num_head)
 
+        seq = x.shape[-2]
+        
         if rope is not None:
+            if token_positions is None:
+                token_positions = torch.arange(seq)
             multi_Q = rope.forward(multi_Q, token_positions)
             multi_K = rope.forward(multi_K, token_positions)
 
-        seq = x.shape[-2]
         mask = (torch.triu(torch.ones(seq, seq), diagonal=1) == 0)
 
         # [batch, head, seq, d_head]
@@ -42,11 +45,3 @@ class MHA(nn.Module):
         # [batch, seq, d_out]
         concat_head = einops.rearrange(multi_head, "... h s d -> ... s (h d)", h=self.num_head)
         return self.output_proj.forward(concat_head)
-
-    # Q = run_linear(d_model, d_model, q_proj_weight, in_features)
-    # K = run_linear(d_model, d_model, k_proj_weight, in_features)
-    # V = run_linear(d_model, d_model, v_proj_weight, in_features)
-
-    # multi_Q = einops.rearrange(Q, "... s (d h) -> ... d s h", d=num_heads)
-    # multi_K = einops.rearrange(K, "... s (d h) -> ... d s h", d=num_heads)
-    # multi_V = einops.rearrange(V, "... s (d h) -> ... d s h", d=num_heads)
