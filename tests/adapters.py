@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from typing import IO, Any, BinaryIO
 
 import numpy.typing as npt
-import torch, math
+import torch, math, einops
 from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
@@ -121,13 +121,8 @@ def run_scaled_dot_product_attention(
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
 
-    d_k = Q.shape[-1]
-    temp = Q @ K.transpose(-1, -2) / math.sqrt(d_k)
-
-    if mask is not None:
-        temp = temp - ~mask * 1e30
-
-    return run_softmax(temp, dim=-1) @ V
+    from my_answer.SDPA import SDPA
+    return SDPA(Q, K, V, mask)
 
     raise NotImplementedError
 
@@ -163,6 +158,16 @@ def run_multihead_self_attention(
         Float[Tensor, " ... sequence_length d_model"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
+
+    from my_answer.MHA import MHA 
+    mha = MHA(d_in=d_model, d_out=d_model, num_head=num_heads)
+    mha.load_state_dict({
+        "q_proj.weight": q_proj_weight, 
+        "k_proj.weight": k_proj_weight, 
+        "v_proj.weight": v_proj_weight, 
+        "output_proj.weight": o_proj_weight})
+    return mha.forward(in_features)
+
     raise NotImplementedError
 
 
@@ -203,6 +208,18 @@ def run_multihead_self_attention_with_rope(
         Float[Tensor, " ... sequence_length d_model"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
+
+    from my_answer.MHA import MHA 
+    mha = MHA(d_in=d_model, d_out=d_model, num_head=num_heads)
+    mha.load_state_dict({
+        "q_proj.weight": q_proj_weight, 
+        "k_proj.weight": k_proj_weight, 
+        "v_proj.weight": v_proj_weight, 
+        "output_proj.weight": o_proj_weight})
+    from my_answer.rope import RoPE
+    rope = RoPE(theta, d_model // num_heads, max_seq_len)
+    return mha.forward(in_features, rope, token_positions)
+
     raise NotImplementedError
 
 
@@ -467,10 +484,8 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
         softmax normalizing the specified `dim`.
     """
 
-    m = in_features.max(dim=dim, keepdim=True).values
-    e = torch.exp(in_features - m)
-    s = e.sum(dim=dim, keepdim=True)
-    return e / s
+    from my_answer.SDPA import softmax
+    return softmax(in_features, dim)
 
     raise NotImplementedError
 
