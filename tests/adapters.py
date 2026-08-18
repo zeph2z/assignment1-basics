@@ -583,6 +583,12 @@ def run_cross_entropy(
     Returns:
         Float[Tensor, ""]: The average cross-entropy loss across examples.
     """
+
+    logsumexp = inputs.max(dim=-1).values + torch.log(torch.sum(torch.exp(inputs - inputs.max(dim=-1, keepdim=True).values), dim=-1)) # [batch_size]
+    logits = inputs[torch.arange(len(targets)), targets] # [batch_size]
+    cross_entropy = logsumexp - logits
+    return cross_entropy.mean()
+
     raise NotImplementedError
 
 
