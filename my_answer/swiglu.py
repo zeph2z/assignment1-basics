@@ -2,6 +2,9 @@ from my_answer.linear import Linear
 import torch
 import torch.nn as nn
 
+def SiLU(x: torch.Tensor):
+    return x * torch.sigmoid(x)
+
 class SwiGLU(nn.Module):
     def __init__(self, d_model, d_ff=None, device=None, dtype=None):
         super().__init__()
@@ -17,4 +20,4 @@ class SwiGLU(nn.Module):
         self.dtype = dtype
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.w2.forward(self.w1.forward(x) * torch.sigmoid(self.w1.forward(x)) * self.w3.forward(x))
+        return self.w2.forward(SiLU(self.w1.forward(x)) * self.w3.forward(x))
