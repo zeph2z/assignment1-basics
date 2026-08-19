@@ -545,6 +545,18 @@ def run_get_batch(
         is the sampled input sequences, and the second tuple item is the corresponding
         language modeling labels.
     """
+
+    first = torch.empty((batch_size, context_length), device=device)
+    second = torch.empty((batch_size, context_length), device=device)
+
+    begins = torch.randint(0, len(dataset) - context_length, (batch_size,)) # [batch_size]
+    offsets = torch.arange(context_length)
+    id_mat = begins[:, None] + offsets[None, :]
+    first = torch.Tensor(dataset[id_mat])
+    second = torch.Tensor(dataset[id_mat + 1])
+
+    return (first, second)
+
     raise NotImplementedError
 
 
