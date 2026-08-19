@@ -655,6 +655,20 @@ def run_get_lr_cosine_schedule(
     Returns:
         Learning rate at the given iteration under the specified schedule.
     """
+
+    tw = warmup_iters
+    tc = cosine_cycle_iters
+    amax = max_learning_rate
+    amin = min_learning_rate
+
+    if it < tw:
+        return it * amax / tw
+
+    if it <= tc:
+        return amin + (1 + math.cos((it - tw) / (tc - tw) * torch.pi)) * (amax - amin) / 2
+
+    return amin
+
     raise NotImplementedError
 
 
