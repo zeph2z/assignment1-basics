@@ -627,6 +627,10 @@ def get_adamw_cls() -> Any:
     """
     Returns a torch.optim.Optimizer that implements AdamW.
     """
+
+    from my_answer.AdamW import AdamW
+    return AdamW
+
     raise NotImplementedError
 
 
