@@ -131,21 +131,18 @@ def train(use_cache = False):
         num_lines = sum(1 for _ in tqdm(f, desc="counting lines", unit="line"))
 
     total_bytes = os.path.getsize(path)
-    total_tokens = 0
 
     encode_iterator = None
 
     with open(path, "r", encoding="utf-8") as f:
         lines = tqdm(f, total=num_lines, desc="encoding", unit="line")
         encode_iterator = tokenizer.encode_iterable(lines)
-        for _ in encode_iterator:
-            total_tokens += 1
 
-    print(f"{total_bytes / total_tokens:.3f} bytes/token")
+        arr = np.fromiter(encode_iterator, dtype=np.uint16)
+        arr_path = os.path.join(BASE_DIR, "..", "data", "TinyStoriesEncodeArray.bin")
+        np.save(arr_path, arr)    
 
-    arr = np.fromiter(encode_iterator, dtype=np.uint16)
-    arr_path = os.path.join(BASE_DIR, "..", "data", "TinyStoriesEncodeArray.bin")
-    np.save(arr_path, arr)    
+    print(f"{total_bytes / arr.size:.3f} bytes/token")
 
 if __name__ == "__main__":
     train(True)

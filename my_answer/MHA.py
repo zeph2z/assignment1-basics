@@ -34,11 +34,11 @@ class MHA(nn.Module):
         
         if rope is not None:
             if token_positions is None:
-                token_positions = torch.arange(seq)
+                token_positions = torch.arange(seq, device=self.device)
             multi_Q = rope.forward(multi_Q, token_positions)
             multi_K = rope.forward(multi_K, token_positions)
 
-        mask = (torch.triu(torch.ones(seq, seq), diagonal=1) == 0)
+        mask = (torch.triu(torch.ones(seq, seq), diagonal=1) == 0).to(device=self.device)
 
         # [batch, head, seq, d_head]
         multi_head = SDPA(multi_Q, multi_K, multi_V, mask)

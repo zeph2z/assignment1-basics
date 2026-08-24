@@ -5,8 +5,8 @@ from einops import rearrange
 class RoPE(nn.Module):
     def __init__(self, theta: float, d_k: int, max_seq_len: int, device=None):
         super().__init__()
-        i = torch.arange(0, max_seq_len)
-        k = torch.arange(0, d_k // 2)
+        i = torch.arange(0, max_seq_len, device=device)
+        k = torch.arange(0, d_k // 2, device=device)
         freqs = 1 / theta ** (2 * k / d_k)
         angles = i[:, None] * freqs[None, :]
 

@@ -13,9 +13,9 @@ class SwiGLU(nn.Module):
             round_to_64 = lambda x: round(x / 64) * 64
             d_ff = round_to_64(d_model * 8 / 3)
 
-        self.w1 = Linear(d_model, d_ff)
-        self.w2 = Linear(d_ff, d_model)
-        self.w3 = Linear(d_model, d_ff)
+        self.w1 = Linear(d_model, d_ff, device=device)
+        self.w2 = Linear(d_ff, d_model, device=device)
+        self.w3 = Linear(d_model, d_ff, device=device)
         self.device = device
         self.dtype = dtype
 

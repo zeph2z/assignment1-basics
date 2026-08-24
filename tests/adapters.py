@@ -552,8 +552,8 @@ def run_get_batch(
     begins = torch.randint(0, len(dataset) - context_length, (batch_size,)) # [batch_size]
     offsets = torch.arange(context_length)
     id_mat = begins[:, None] + offsets[None, :]
-    first = torch.Tensor(dataset[id_mat])
-    second = torch.Tensor(dataset[id_mat + 1])
+    first = torch.from_numpy(dataset[id_mat]).to(device=device, dtype=torch.long)
+    second = torch.from_numpy(dataset[id_mat + 1]).to(device=device, dtype=torch.long)
 
     return (first, second)
 
