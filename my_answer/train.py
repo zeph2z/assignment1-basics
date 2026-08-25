@@ -33,7 +33,7 @@ model_hp = dict(
 train_hp = dict(
     context_length=256,
     batch_size=16,
-    total_iters=300,
+    total_iters=301,
     max_lr=1e-3,
     min_lr=1e-4,
     warmup_iters=20,
@@ -43,7 +43,7 @@ train_hp = dict(
     grad_clip=1.0,
     device="mps",
     cosine_cycle_iters=250,
-    save_iters = 5
+    save_iters = 50
 )
 
 class TransformerBlock(nn.Module):
