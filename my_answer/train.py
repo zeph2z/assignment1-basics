@@ -69,6 +69,9 @@ class TransformerBlock(nn.Module):
         return x
 
 class TransformerLM(nn.Module):
+    # total parameters = 2 * vocab_size * d_model + d_model + num_layers * (2 * d_model + 3 * d_model * d_ff + 4 * d_model ** 2)
+    # 1.64G parameters for GPT-2 XL-sized
+    # total FLOPs = 2BLDV + N * (8BLD^2 + 4BL^2D + 6BLDF)
     def __init__(self, vocab_size, d_model, eps, device, num_heads, d_ff, theta, context_length, num_layers):
         super().__init__()
         self.embedding = Embedding(num_embeddings=vocab_size, embedding_dim=d_model, device=device)
